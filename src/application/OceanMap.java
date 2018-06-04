@@ -1,76 +1,103 @@
 package application;
 
 import java.awt.Point;
+
 import java.util.Random;
 
+//creates the map with a set number of dimensions and island and pirate count
+//each cell is an integer correspoding to a game object. Defines in cell types
+
+
 public class OceanMap {
-	boolean[][] islands;
-	int dimensions;
-	int islandCount;
+	static final int DIMENSION = 20;
+	static final int ISLAND_COUNT = 40;
+	static final int PIRATE_COUNT = 7;
 	Random rand = new Random();
-	Point shipLocation;
+	int[][] oceanMap = new int[DIMENSION][DIMENSION];
+	private static OceanMap uniqueInstance;
 	
-	// Constructor
-	// Not adding validation code so make sure islandCount is much less than dimension^2
-	public OceanMap(int dimensions, int islandCount){
-		this.dimensions = dimensions;
-		this.islandCount = islandCount;
-		createGrid();
-		placeIslands();
-		shipLocation = placeShip();
+
+	public OceanMap(){
+		populateOceanMap();
+		createPirates(PIRATE_COUNT);
 	}
 	
-	// Create an empty map
-	private void createGrid(){
-		 islands = new boolean[dimensions][dimensions];
-		 for(int x = 0; x < dimensions; x++)
-			 for(int y = 0; y < dimensions; y++)
-				 islands[x][y] = false;
-	}
 	
-	// Place islands onto map
-	private void placeIslands(){
-		int islandsToPlace = islandCount;
-		while(islandsToPlace >0){
-			int x = rand.nextInt(dimensions);
-			int y = rand.nextInt(dimensions);
-			if(islands[x][y] == false){
-				islands[x][y] = true;
-				islandsToPlace--;
-			}
+	public static OceanMap getInstance() {
+		if(uniqueInstance != null) {
+			return uniqueInstance;
+		}
+		else {
+			uniqueInstance = new OceanMap();
+			return uniqueInstance;
 		}
 	}
 	
-	private Point placeShip(){
-		boolean placedShip = false;
-		int x=0,y=0;
-		while(!placedShip){
-			x = rand.nextInt(dimensions);
-			y = rand.nextInt(dimensions);
-			if(islands[x][y] == false){
-				placedShip = true;
-			}
+	private void populateOceanMap() {
+		for(int i = 0; i < ISLAND_COUNT; i++) {
+			Point p = getRandomOceanCell();
+			updateCell(p.x,p.y,CellTypes.ISLAND);
 		}
-		return new Point(x,y);
+		Point p = getRandomOceanCell();
+		updateCell(p.x,p.y,CellTypes.TREASURE);
+		
 	}
 
-	public Point getShipLocation(){
-		return shipLocation;
+	void updateCell(int x, int y, int type) {
+		if (x >= 0 && y >= 0 && x < oceanMap[0].length && y < oceanMap.length) {
+			oceanMap[y][x] = type;
+		}	    
+	}
+
+
+	private void createPirates(int pirateCount) {
+		Random random = new Random();
+		while(pirateCount > 0) {
+			int y = random.nextInt(oceanMap.length);
+			int x = random.nextInt(oceanMap[0].length);
+			if(oceanMap[y][x] == CellTypes.OCEAN) {
+				oceanMap[y][x] = CellTypes.PIRATE;
+					pirateCount --;
+				}
+			}
+		}
+	
+	private Point getRandomOceanCell() {
+		int x;
+		int y;
+		do {
+			x = rand.nextInt(DIMENSION);
+			y = rand.nextInt(DIMENSION);
+		}
+		while(!isOcean(x,y));
+		return new Point(x,y);	
+	}
+
+
+	private boolean isOcean(int x, int y) {
+		boolean validIndex = false;
+		if(x >= 0 && y>= 0 && x < oceanMap.length && y < oceanMap.length) {
+			validIndex = true;	
+		}
+		return (validIndex && oceanMap[x][y] == CellTypes.OCEAN);
 	}
 	
-	// Return generated map
-	public boolean[][] getMap(){
-		return islands;
-	}
+	public boolean canEnter(int x, int y) {
+	    return isOcean(x, y);
+    }
+
+	public int getDimension() { return DIMENSION; }
 	
-	public int getDimensions(){
-		return dimensions;
+	public int[][] getMap() {
+		return oceanMap;
 	}
-	
-	public boolean isOcean(int x, int y){
-		if (!islands[x][y])
-			return true;
-		else
-			return false;
-	}
+		
 }
+
+
+
+
+
+
+
+

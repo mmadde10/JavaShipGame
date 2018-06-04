@@ -5,56 +5,77 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.Random;
 
+import javafx.scene.image.ImageView;
+
+//the pirate ship class implements the obsever interface and observes the ship object
+
 public class PirateShip implements Observer{
-	int dimensions;
-	OceanMap oceanMap;
-	Point currentLocation;
-	Point pirateLocation;
-	Point shipLocation;
+	private Point location;
 	Random rand = new Random();
+	private int[][] oceanMap;
+	private PursuitStrategy strategy;
+	private ImageView pirateImageView;
+	private final int scalingFactor = Main.scalingFactor;
+	private Ship columbus;
 	
-	
-	public PirateShip(OceanMap oceanMap) {
+	public PirateShip(Ship Columbus, int[][] oceanMap) {
+		this.columbus = columbus;
+		location = new Point(0,0);
 		this.oceanMap = oceanMap;
-		while(true){
-			int x = rand.nextInt(oceanMap.dimensions);
-			int y = rand.nextInt(oceanMap.dimensions);
-			if(oceanMap.getMap()[x][y] != true){
-				pirateLocation = new Point(x,y);
-				break;
-			}
-		}
-	}
-	public Point getPirateLocation(){
-		return this.pirateLocation;
+		setStrategy(new DirectPathStrategy());
 	}
 	
-	public void movePirate(){
-		if(pirateLocation.x - shipLocation.x  == 0){}
-		else if(pirateLocation.x - shipLocation.x < 0){
-			if(pirateLocation.x<oceanMap.getDimensions()-1 && oceanMap.isOcean(pirateLocation.x+1, pirateLocation.y))
-				pirateLocation.x++;
-		}
-		else if(pirateLocation.x>0 && oceanMap.isOcean(pirateLocation.x-1,pirateLocation.y))
-			pirateLocation.x--;
-		
-		if(pirateLocation.y - shipLocation.y  == 0){}
-		else if(pirateLocation.y - shipLocation.y < 0){
-			if(pirateLocation.y<oceanMap.getDimensions()-1 && oceanMap.isOcean(pirateLocation.x, pirateLocation.y+1))
-				pirateLocation.y++;
-		}
-		else if(pirateLocation.y>0 && oceanMap.isOcean(pirateLocation.x, pirateLocation.y-1))
-			pirateLocation.y--;
-	}
+    public void setStrategy(PursuitStrategy strategy) { 
+    	this.strategy = strategy; 
+    }
+    public void setLocation(int x, int y) {
+    	location = new Point(x,y);
+    }
+
+    private void movePirate(int x, int y) {
+        oceanMap[location.y][location.x] = CellTypes.OCEAN;
+
+        location.move(x, y);
+
+        oceanMap[y][x] = CellTypes.PIRATE;
+    }
+    
+    public Point getLocation() {
+        return location;
+      }
+
+      public void setColumbus(Ship ship) {
+          columbus = ship;
+      }
+
+      public void setImageView(ImageView imageV) {
+          pirateImageView = imageV;
+          updateImageView();
+      }
+      public ImageView getImageView() { 
+    	  return pirateImageView; 
+      }
 	
 	@Override
 	public void update(Observable o, Object arg) {
-		if(o instanceof Ship){
-			shipLocation = ((Ship)o).getShipLocation();
-			movePirate();
-		}
+		 Point cLocation = columbus.getLocation();
+	        if (location != cLocation) {
+	            Point nextPosition = strategy.getNextPosition(location, cLocation);
+	            movePirate((int) nextPosition.getX(), (int) nextPosition.getY());
+	        }
+	        if(getLocation().equals(columbus.getLocation())) {
+	            columbus.hitPirate = true;
+	            System.out.println("Columbus captured at " + columbus.getLocation().x + ", " + columbus.getLocation().y +
+	                                    " by pirate at " + location.x + ", " + location.y);
+	        }
+	        updateImageView();
 		
 	}
+	
+	 private void updateImageView() {
+	        pirateImageView.setX(getLocation().x * scalingFactor);
+	        pirateImageView.setY(getLocation().y * scalingFactor);
+	    }
 	
 	
 }
